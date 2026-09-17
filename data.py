@@ -41,7 +41,7 @@ MARQUE = {
 # Cloudflare Pages, lues par functions/api/contact.js, jamais par build.py.
 FORMULAIRE = {
     # Créée sur le tableau de bord Cloudflare, section Turnstile.
-    "turnstile_site_key": {"v": "", "provisoire": True},
+    "turnstile_site_key": {"v": "0x4AAAAAAE6Pd8qtivTpGl6j", "provisoire": False},
 }
 
 # Texte « à propos » — sans exposer personne.
