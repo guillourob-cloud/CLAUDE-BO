@@ -2,7 +2,7 @@
 """Génère le site statique du Cœur du Bourg à partir de data.py.
    Aucun JavaScript n'est nécessaire pour l'afficher.
    Les photos sont intégrées au fichier : il fonctionne hors ligne."""
-import html, base64, datetime, pathlib, shutil, os
+import html, base64, datetime, pathlib, shutil, os, re, calendar, urllib.request
 from data import MARQUE, APROPOS, BATIMENTS, PARTENAIRES, LOGEMENTS, REGLAGES, FORMULAIRE
 
 import sys
@@ -110,6 +110,100 @@ title="Situation approximative" loading="lazy" referrerpolicy="no-referrer"></if
 <p class="carte-pied"><span>Zone approximative — adresse exacte communiquée après
 réservation</span><a href="{g}" target="_blank" rel="noopener">Google Maps ↗</a></p>
 </div>'''
+
+
+def _deplier_ical(texte):
+    """RFC 5545 : une ligne qui commence par une espace/tabulation prolonge
+       la précédente. Airbnb/Booking en font peu, mais autant être robuste."""
+    lignes = texte.replace("\r\n", "\n").split("\n")
+    out = []
+    for ligne in lignes:
+        if ligne.startswith((" ", "\t")) and out:
+            out[-1] += ligne[1:]
+        else:
+            out.append(ligne)
+    return out
+
+
+def _date_ical(valeur):
+    m = re.match(r"(\d{8})", valeur.strip())
+    return datetime.datetime.strptime(m.group(1), "%Y%m%d").date() if m else None
+
+
+def _parse_vevents(texte):
+    """Renvoie l'ensemble des dates occupées : [DTSTART, DTEND[, comme
+       le veut la convention Airbnb/Booking (DTEND = jour de départ, donc
+       déjà libre pour une nouvelle arrivée)."""
+    dates, debut, fin = set(), None, None
+    for ligne in _deplier_ical(texte):
+        cle = ligne.split(":", 1)[0].split(";", 1)[0]
+        if cle == "BEGIN" and ligne.endswith("VEVENT"):
+            debut = fin = None
+        elif cle == "DTSTART":
+            debut = _date_ical(ligne.split(":", 1)[1])
+        elif cle == "DTEND":
+            fin = _date_ical(ligne.split(":", 1)[1])
+        elif cle == "END" and ligne.endswith("VEVENT") and debut and fin:
+            d = debut
+            while d < fin:
+                dates.add(d)
+                d += datetime.timedelta(days=1)
+    return dates
+
+
+def recuperer_ical(urls):
+    """Télécharge et fusionne les flux iCal d'un logement. Un flux
+       injoignable ou illisible est ignoré (avertissement console) plutôt
+       que de faire échouer toute la génération. Renvoie None si aucun flux
+       n'a pu être lu (calendrier alors omis), sinon l'ensemble des dates
+       occupées — potentiellement vide si le logement est entièrement libre."""
+    occupe, au_moins_un = set(), False
+    for url in urls:
+        try:
+            with urllib.request.urlopen(url, timeout=10) as reponse:
+                texte = reponse.read().decode("utf-8", errors="replace")
+        except Exception as e:
+            print(f"⚠ calendrier : flux iCal injoignable ({url}) — {e}", file=sys.stderr)
+            continue
+        occupe |= _parse_vevents(texte)
+        au_moins_un = True
+    return occupe if au_moins_un else None
+
+
+MOIS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet",
+           "août", "septembre", "octobre", "novembre", "décembre"]
+JOURS_FR = ["L", "M", "M", "J", "V", "S", "D"]
+
+
+def _mois_suivant(d):
+    return d.replace(year=d.year + 1, month=1) if d.month == 12 else d.replace(month=d.month + 1)
+
+
+def _calendrier_mois(mois, occupe, aujourdhui):
+    nb_jours = calendar.monthrange(mois.year, mois.month)[1]
+    cases = '<span class="dispo-j dispo-j--vide"></span>' * mois.weekday()
+    for j in range(1, nb_jours + 1):
+        d = mois.replace(day=j)
+        if d < aujourdhui:
+            cls = "dispo-j--passe"
+        elif d in occupe:
+            cls = "dispo-j--occupe"
+        else:
+            cls = "dispo-j--libre"
+        cases += f'<span class="dispo-j {cls}">{j}</span>'
+    entete = "".join(f'<span class="dispo-ent">{j}</span>' for j in JOURS_FR)
+    return (f'<div class="dispo-bloc"><h4>{MOIS_FR[mois.month - 1]} {mois.year}</h4>'
+            f'<div class="dispo-grille">{entete}{cases}</div></div>')
+
+
+def calendrier_html(occupe, n_mois=4):
+    aujourdhui = datetime.date.today()
+    mois = aujourdhui.replace(day=1)
+    blocs = ""
+    for _ in range(n_mois):
+        blocs += _calendrier_mois(mois, occupe, aujourdhui)
+        mois = _mois_suivant(mois)
+    return f'<div class="dispo-mois">{blocs}</div>'
 
 
 def page_accueil():
@@ -272,6 +366,22 @@ def page_logement(l):
     desc = "".join(f"<p>{E(p)}</p>" for p in l["description"])
     pull = f'<p class="pull">{E(l["citation"])}</p>' if l["citation"] else ""
 
+    dispo = ""
+    if l["ical"]:
+        occupe = recuperer_ical(l["ical"])
+        if occupe is not None:
+            precision = (" La réservation se confirme sur Airbnb."
+                         if l["reservation"].get("ete", {}).get("mode") == "airbnb" else "")
+            dispo = (f'<section class="sec sec--paper"><div class="wrap">'
+                     f'<p class="eyebrow">Disponibilités</p><h2>Calendrier indicatif</h2>'
+                     f'<p class="lede">Mis à jour automatiquement, à titre indicatif.'
+                     f'{precision}</p>'
+                     f'{calendrier_html(occupe)}'
+                     f'<ul class="dispo-legende">'
+                     f'<li><span class="dispo-j dispo-j--libre"></span>Libre</li>'
+                     f'<li><span class="dispo-j dispo-j--occupe"></span>Occupé</li>'
+                     f'</ul></div></section>')
+
     return f'''<section class="page" id="{E(l["id"])}">
 <div class="lg-top"><div class="wrap">
 <a class="back" href="#appartements">← Nos appartements</a>
@@ -284,7 +394,7 @@ def page_logement(l):
 <div class="lg-txt"><div class="prose">{desc}</div>{pull}{lits}</div>
 <aside class="lg-book"><div class="book">{blocs}</div>{dec}</aside>
 </div></section>
-{moments}{equip}{v360}
+{dispo}{moments}{equip}{v360}
 <section class="sec sec--paper"><div class="wrap">
 <p class="eyebrow">Où c'est</p><h2>{E(bat["nom"])}</h2>
 <p class="lede">{E(bat["cp"])} {E(bat["commune"])} — {bat["altitude"]} m</p>

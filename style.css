@@ -231,6 +231,26 @@ font-size:10px;color:var(--rock);margin-bottom:11px}
 .v360{margin-top:22px;aspect-ratio:16/9;border:1px solid var(--line-d);overflow:hidden}
 .v360 iframe{width:100%;height:100%;border:0}
 
+/* disponibilités */
+.dispo-mois{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:clamp(16px,2.5vw,28px);margin-top:22px}
+.dispo-bloc{background:var(--stone);border:1px solid var(--line);padding:16px}
+.dispo-bloc h4{font-family:var(--data);font-weight:600;text-transform:uppercase;
+letter-spacing:.12em;font-size:10.5px;color:var(--rock);margin-bottom:12px}
+.dispo-grille{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.dispo-ent{font-family:var(--data);font-weight:600;font-size:9px;text-align:center;
+color:var(--rock);padding-bottom:4px}
+.dispo-j{aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+font-family:var(--data);font-size:11.5px;color:var(--ink)}
+.dispo-j--vide{visibility:hidden}
+.dispo-j--libre{background:var(--paper)}
+.dispo-j--occupe{background:var(--valley);color:#fff}
+.dispo-j--passe{background:transparent;color:var(--rock);opacity:.35}
+.dispo-legende{list-style:none;display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:18px;
+font-size:13px;color:var(--rock);max-width:none}
+.dispo-legende li{display:flex;align-items:center;gap:8px}
+.dispo-legende .dispo-j{width:16px;aspect-ratio:1;display:inline-flex}
+
 /* carte */
 .carte{position:relative;border:1px solid var(--line);overflow:hidden;aspect-ratio:3/2}
 .carte--large{aspect-ratio:16/9;margin-top:22px}

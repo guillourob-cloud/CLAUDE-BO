@@ -79,15 +79,41 @@ reste seulement la clé secrète à rentrer dans Cloudflare (étape c).
 puis transmet à Formspree. Il se déploie avec le reste du site, sans
 configuration supplémentaire une fois les deux valeurs ci-dessus entrées.
 
-## 3 · Calendrier des disponibilités (préparation)
+## 3 · Calendrier des disponibilités
 
-Un flux GitHub Actions (`.github/workflows/rebuild-quotidien.yml`) est déjà
-en place pour republier le site chaque nuit, une fois que le calendrier
-iCal existera (ce n'est pas encore fait à ce jour). Comme c'est un Worker
-(pas Pages), il n'y a pas de « Deploy Hook » à appeler : ce flux construit
-et publie lui-même via `wrangler`. Pour l'activer dès maintenant, ajoutez
-deux secrets sur GitHub (dépôt → **Settings** → **Secrets and variables**
-→ **Actions** → **New repository secret**) :
+Le calendrier est déjà codé : chaque fiche logement affiche automatiquement
+les 4 prochains mois avec les dates occupées, dès que `data.py` contient au
+moins un lien iCal pour ce logement.
+
+### a) Coller les liens iCal
+
+1. Sur Airbnb : espace hôte → Calendrier → l'appartement concerné →
+   **Disponibilité** → **Synchroniser les calendriers** → **Exporter le
+   calendrier**. Copiez le lien affiché (il ressemble à
+   `https://www.airbnb.fr/calendar/ical/12345.ics?s=xxxxxxxx`).
+2. Sur Booking (si utilisé) : Extranet → Tarifs et disponibilités →
+   Synchronisation des calendriers → Exporter le calendrier iCal.
+3. Dans `data.py`, pour le logement concerné, remplissez :
+   ```python
+   "ical": [
+       "https://www.airbnb.fr/calendar/ical/12345.ics?s=xxxxxxxx",
+       "https://admin.booking.com/.../calendar.ics",  # si applicable
+   ],
+   ```
+4. Relancez `python3 build.py` : la fiche affiche désormais le calendrier.
+   Si un lien est incorrect ou injoignable, la génération continue quand
+   même — un avertissement s'affiche juste dans le terminal, et seul ce
+   lien-là est ignoré.
+
+### b) Le tenir à jour automatiquement
+
+Un flux GitHub Actions (`.github/workflows/rebuild-quotidien.yml`) republie
+le site chaque nuit pour que le calendrier reflète les réservations
+récentes, même sans nouveau commit. Comme c'est un Worker (pas Pages), il
+n'y a pas de « Deploy Hook » à appeler : ce flux construit et publie
+lui-même via `wrangler`. Pour l'activer, ajoutez deux secrets sur GitHub
+(dépôt → **Settings** → **Secrets and variables** → **Actions** → **New
+repository secret**) :
 
 1. `CLOUDFLARE_API_TOKEN` — dans le tableau de bord Cloudflare : **My
    Profile** (icône en haut à droite) → **API Tokens** → **Create Token**
@@ -96,9 +122,6 @@ deux secrets sur GitHub (dépôt → **Settings** → **Secrets and variables**
 2. `CLOUDFLARE_ACCOUNT_ID` — visible dans le tableau de bord Cloudflare,
    sur la page **Workers & Pages** (colonne de droite), ou dans l'URL du
    tableau de bord.
-
-Sans effet visible tant que le calendrier iCal n'est pas branché, mais rien
-à refaire le jour où il le sera.
 
 ## 4 · Ce que ça coûte
 
