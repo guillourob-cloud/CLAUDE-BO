@@ -4,10 +4,21 @@
 // JavaScript » du site, qui ne porte que sur ce qui est envoyé au visiteur
 // (voir CLAUDE.md).
 //
-// Variables d'environnement attendues (onglet Bindings du Worker, sur le
-// tableau de bord Cloudflare — jamais dans ce dépôt, voir MISE-EN-LIGNE.md) :
+// Variables d'environnement attendues (Bindings du Worker, sur le tableau
+// de bord Cloudflare — jamais dans ce dépôt, voir MISE-EN-LIGNE.md) :
 //   FORMSPREE_ENDPOINT   ex. https://formspree.io/f/xxxxxxxx
 //   TURNSTILE_SECRET_KEY la clé secrète (pas la clé publique du site)
+//
+// Selon le type de binding choisi dans le tableau de bord, sa valeur arrive
+// soit comme une chaîne directement (binding "Secret"/"Environment
+// Variable" classique), soit comme un objet à interroger avec .get() (les
+// nouveaux bindings "Secrets Store"). valeurEnv() gère les deux.
+async function valeurEnv(v) {
+  if (v == null) return undefined;
+  if (typeof v === "string") return v;
+  if (typeof v.get === "function") return await v.get();
+  return undefined;
+}
 
 const MERCI = "/#contact-merci";
 const ERREUR = "/#contact-erreur";
@@ -33,7 +44,8 @@ async function traiterContact(request, env) {
     return revenirVers(MERCI);
   }
 
-  if (env.TURNSTILE_SECRET_KEY) {
+  const turnstileSecret = await valeurEnv(env.TURNSTILE_SECRET_KEY);
+  if (turnstileSecret) {
     const jeton = form.get("cf-turnstile-response");
     if (!jeton) return revenirVers(ERREUR);
 
@@ -43,7 +55,7 @@ async function traiterContact(request, env) {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
-          secret: env.TURNSTILE_SECRET_KEY,
+          secret: turnstileSecret,
           response: jeton,
           remoteip: request.headers.get("CF-Connecting-IP") || "",
         }),
@@ -53,9 +65,10 @@ async function traiterContact(request, env) {
     if (!resultat.success) return revenirVers(ERREUR);
   }
 
-  if (!env.FORMSPREE_ENDPOINT) return revenirVers(ERREUR);
+  const formspreeEndpoint = await valeurEnv(env.FORMSPREE_ENDPOINT);
+  if (!formspreeEndpoint) return revenirVers(ERREUR);
 
-  const relais = await fetch(env.FORMSPREE_ENDPOINT, {
+  const relais = await fetch(formspreeEndpoint, {
     method: "POST",
     headers: { Accept: "application/json" },
     body: form,
