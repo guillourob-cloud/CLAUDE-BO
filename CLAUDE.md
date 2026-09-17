@@ -16,9 +16,20 @@ photos en fichiers séparés). `python3 build.py --apercu` produit
 consultation sur téléphone — jamais mis en ligne).
 
 **Règles absolues, à ne jamais enfreindre :**
-1. Le site ne contient AUCUN JavaScript. C'est volontaire : référencement,
-   fiabilité, affichage instantané. La navigation se fait en CSS pur, avec
-   `:target`. Ne propose jamais d'ajouter du JS au site généré.
+1. Le site ne contient AUCUN JavaScript, sauf l'unique exception ci-dessous.
+   C'est volontaire : référencement, fiabilité, affichage instantané. La
+   navigation se fait en CSS pur, avec `:target`. Ne propose jamais d'ajouter
+   du JS au site généré en dehors de cette exception.
+   - **Exception documentée** : le widget anti-robot Cloudflare Turnstile du
+     formulaire de contact (`page_contact()` dans `build.py`). Comme toutes
+     les pages du site vivent dans un seul document HTML (navigation par
+     `:target`), ce script est présent sur toutes les pages, pas seulement
+     sur Contact — mais il ne se charge que si `FORMULAIRE["turnstile_site_key"]`
+     est renseigné dans `data.py`, et reste `async defer` (non bloquant).
+     Tant que cette clé est vide, le site reste 100 % sans JS.
+   - Le code de `functions/api/contact.js` (Cloudflare Pages Functions)
+     s'exécute côté serveur, jamais dans le navigateur : il ne compte pas
+     dans cette règle, qui ne porte que sur ce qui est envoyé au visiteur.
 2. Aucune information ne doit être écrite en dur dans le HTML. Tout vient de
    `data.py`. Ajouter un logement = ajouter un dict, rien d'autre.
 3. Ne modifie jamais `index.html` ou `apercu-mobile.html` à la main : ils
@@ -26,6 +37,10 @@ consultation sur téléphone — jamais mis en ligne).
 4. `a-completer.txt` est généré automatiquement et n'est jamais publié.
 5. Les photos de `photos/` sont en qualité 92 à résolution native. Ne les
    recompresse pas. Seules celles de `photos-apercu/` peuvent être allégées.
+6. Aucun secret (clé Turnstile secrète, endpoint Formspree) ne doit jamais
+   être écrit dans `data.py` ni ailleurs dans ce dépôt : ils vivent
+   uniquement en variables d'environnement Cloudflare Pages. Seule la clé
+   Turnstile *publique* (site key) est faite pour être dans `data.py`.
 
 **La direction artistique** — Palette : galet de rivière, ombre de montagne,
 vert de vallée. Trois polices : Instrument Serif (titres), Inter (texte),

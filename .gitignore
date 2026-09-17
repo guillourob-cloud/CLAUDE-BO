@@ -3,3 +3,4 @@ __pycache__/
 index.html
 apercu-mobile.html
 a-completer.txt
+dist/

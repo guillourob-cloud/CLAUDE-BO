@@ -2,8 +2,8 @@
 """Génère le site statique du Cœur du Bourg à partir de data.py.
    Aucun JavaScript n'est nécessaire pour l'afficher.
    Les photos sont intégrées au fichier : il fonctionne hors ligne."""
-import html, base64, datetime, pathlib
-from data import MARQUE, APROPOS, BATIMENTS, PARTENAIRES, LOGEMENTS, REGLAGES
+import html, base64, datetime, pathlib, shutil, os
+from data import MARQUE, APROPOS, BATIMENTS, PARTENAIRES, LOGEMENTS, REGLAGES, FORMULAIRE
 
 import sys
 APERCU = "--apercu" in sys.argv     # fichier unique, photos allégées, pour consultation
@@ -308,18 +308,36 @@ def page_apropos():
 </div></section></section>'''
 
 
+def page_contact_etat(id_, titre, texte):
+    return f'''<section class="page" id="{id_}">
+<section class="sec"><div class="wrap wrap--etroit">
+<p class="eyebrow">Contact</p><h2>{E(titre)}</h2>
+<p class="lede">{E(texte)}</p>
+<a class="btn" href="#accueil">Retour à l'accueil</a>
+</div></section></section>'''
+
+
 def page_contact():
     opts = "".join(f'<option>{E(l["nom"])}</option>' for l in visibles)
+    tsk = FORMULAIRE["turnstile_site_key"]["v"]
+    # Le site reste sans JavaScript tant que cette clé n'est pas renseignée :
+    # le script Turnstile n'est écrit dans le document que si on l'utilise
+    # vraiment (voir CLAUDE.md, exception documentée).
+    turnstile = f'<div class="cf-turnstile" data-sitekey="{E(tsk)}"></div>' if tsk else ""
+    turnstile_script = ('<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" '
+                         'async defer></script>') if tsk else ""
+    email = MARQUE["email"]["v"]
+    secours = (f' Vous pouvez aussi nous écrire directement à {E(email)}.' if email else "")
     return f'''<section class="page" id="contact">
 <section class="sec"><div class="wrap wrap--etroit">
 <p class="eyebrow">Contact</p><h2>Écrivez-nous</h2>
 <p class="lede">Pour une réservation, une question, ou une demande de location
 à la saison d'hiver. Nous répondons sous 24 heures.</p>
-<form>
+<form action="/api/contact" method="post">
 <div class="r2">
-<p class="f"><label for="n">Nom</label><input id="n" name="nom" autocomplete="name"></p>
+<p class="f"><label for="n">Nom</label><input id="n" name="nom" autocomplete="name" required></p>
 <p class="f"><label for="e">E-mail</label><input id="e" name="email" type="email"
-autocomplete="email" inputmode="email"></p></div>
+autocomplete="email" inputmode="email" required></p></div>
 <p class="f"><label for="t">Téléphone <span>(facultatif)</span></label>
 <input id="t" name="tel" type="tel" autocomplete="tel" inputmode="tel"></p>
 <p class="f"><label for="a">Appartement</label>
@@ -330,11 +348,16 @@ autocomplete="email" inputmode="email"></p></div>
 <div class="r2">
 <p class="f"><label for="d1">Du</label><input id="d1" name="du" type="date"></p>
 <p class="f"><label for="d2">Au</label><input id="d2" name="au" type="date"></p></div>
-<p class="f"><label for="m">Message</label><textarea id="m" name="message"></textarea></p>
+<p class="f"><label for="m">Message</label><textarea id="m" name="message" required></textarea></p>
 <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" class="pot" aria-hidden="true">
-<button class="btn btn--full" type="button" disabled>Formulaire à connecter</button>
+{turnstile}
+<button class="btn btn--full" type="submit">Envoyer le message</button>
 <p class="rgpd">Vos coordonnées servent uniquement à répondre à votre demande.</p>
-</form></div></section></section>'''
+</form></div></section></section>
+{page_contact_etat("contact-merci", "Message envoyé", "Merci, nous vous répondons sous 24 heures.")}
+{page_contact_etat("contact-erreur", "Message non envoyé",
+                    "Une erreur est survenue en envoyant votre message. Réessayez dans un instant." + secours)}
+{turnstile_script}'''
 
 
 def fichier_chantier():
@@ -418,10 +441,30 @@ DOC = f'''<!doctype html>
 </p></div></footer>
 </body></html>'''
 
-out = ICI
+# Sur Cloudflare Pages (variable CF_PAGES fournie automatiquement par leur
+# environnement de build), le site publié doit vivre dans un dossier séparé
+# de la racine du dépôt — sinon data.py et build.py deviendraient
+# téléchargeables publiquement à côté du site.
+if os.environ.get("SORTIE"):
+    out = pathlib.Path(os.environ["SORTIE"])
+elif os.environ.get("CF_PAGES"):
+    out = ICI / "dist"
+else:
+    out = ICI
+out.mkdir(parents=True, exist_ok=True)
+
 nom = "apercu-mobile.html" if APERCU else "index.html"
 (out / nom).write_text(DOC, encoding="utf-8")
-(out / "a-completer.txt").write_text(fichier_chantier(), encoding="utf-8")
+(ICI / "a-completer.txt").write_text(fichier_chantier(), encoding="utf-8")
+
+if out != ICI and not APERCU:
+    # Le HTML référence "photos/xxx.jpg" en chemin relatif : il faut que le
+    # dossier photos/ existe à côté du site publié, pas seulement à la racine.
+    dest_photos = out / "photos"
+    if dest_photos.exists():
+        shutil.rmtree(dest_photos)
+    if PHOTOS.exists():
+        shutil.copytree(PHOTOS, dest_photos)
 
 mode = "aperçu (photos intégrées, allégées)" if APERCU else "site réel (photos en fichiers séparés, pleine qualité)"
 print(f"{nom} — {len(DOC)//1024} Ko | {len(visibles)} logements | "

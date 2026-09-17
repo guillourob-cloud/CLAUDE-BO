@@ -1,0 +1,28 @@
+name: Rebuild quotidien
+
+# Redéclenche une publication Cloudflare Pages une fois par jour, pour que
+# le calendrier de disponibilités (flux iCal) reste à jour même sans
+# nouveau commit. Sans effet visible tant que build.py ne récupère pas
+# encore les flux iCal — voir MISE-EN-LIGNE.md.
+#
+# Nécessite un secret de dépôt CF_DEPLOY_HOOK_URL : l'URL de "Deploy Hook"
+# fournie par Cloudflare Pages (Paramètres du projet → Deploy Hooks).
+# Cette URL ne doit jamais être écrite en dur ici : n'importe qui la
+# connaissant peut déclencher une publication.
+
+on:
+  schedule:
+    - cron: "0 4 * * *"   # 4 h UTC chaque jour
+  workflow_dispatch: {}    # bouton "Run workflow" pour tester manuellement
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Déclenche le Deploy Hook Cloudflare Pages
+        run: |
+          if [ -z "${{ secrets.CF_DEPLOY_HOOK_URL }}" ]; then
+            echo "::error::Secret CF_DEPLOY_HOOK_URL absent — voir MISE-EN-LIGNE.md"
+            exit 1
+          fi
+          curl -fsS -X POST "${{ secrets.CF_DEPLOY_HOOK_URL }}"

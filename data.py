@@ -33,6 +33,17 @@ MARQUE = {
     "signature": {"v": "", "provisoire": True},
 }
 
+# Formulaire de contact — voir MISE-EN-LIGNE.md pour la marche à suivre.
+# La clé Turnstile ici est la clé PUBLIQUE (site key) : elle est faite pour
+# apparaître dans le HTML, aucun risque à la coller ici. L'adresse Formspree
+# et la clé SECRÈTE Turnstile ne doivent JAMAIS être écrites dans ce dépôt —
+# elles se configurent uniquement comme variables d'environnement côté
+# Cloudflare Pages, lues par functions/api/contact.js, jamais par build.py.
+FORMULAIRE = {
+    # Créée sur le tableau de bord Cloudflare, section Turnstile.
+    "turnstile_site_key": {"v": "", "provisoire": True},
+}
+
 # Texte « à propos » — sans exposer personne.
 APROPOS = {
     "titre": "Une affaire de famille",
