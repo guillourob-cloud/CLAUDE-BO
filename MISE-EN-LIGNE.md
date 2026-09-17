@@ -1,35 +1,45 @@
 # Mettre le site en ligne — Le Cœur du Bourg
 
-Ce document explique, en langage simple, comment publier le site sur
-Cloudflare Pages, brancher le formulaire de contact, et comment publier une
-mise à jour au quotidien. À suivre une seule fois pour la mise en place ;
-la section « Publier une mise à jour » sert ensuite en permanence.
+Ce document explique, en langage simple, comment finir de publier le site
+sur Cloudflare (Worker `claude-bo`, déjà connecté au dépôt GitHub), brancher
+le formulaire de contact, et comment publier une mise à jour au quotidien.
+À suivre une seule fois pour la mise en place ; la section « Publier une
+mise à jour » sert ensuite en permanence.
 
-## 1 · Mettre le site en ligne sur Cloudflare Pages
+**Note technique** : ce projet est un *Cloudflare Worker* (pas un projet
+« Pages » classique) — c'est ce que montre le champ « Deploy command : npx
+wrangler deploy » dans l'interface Cloudflare. Concrètement, ça veut dire
+que le dossier à publier et le script qui gère le formulaire sont définis
+dans deux fichiers du dépôt (`wrangler.jsonc` et `worker.js`), pas dans des
+réglages du tableau de bord.
 
-1. Créez un compte gratuit sur [dash.cloudflare.com](https://dash.cloudflare.com)
-   si vous n'en avez pas.
-2. Dans le tableau de bord, allez dans **Workers & Pages** → **Créer une
-   application** → **Pages** → **Connecter à Git**.
-3. Autorisez Cloudflare à accéder au dépôt GitHub `guillourob-cloud/CLAUDE-BO`,
-   et sélectionnez-le.
-4. Choisissez la branche à publier (celle que vous utilisez comme version
-   « officielle » du site — demandez-moi si vous voulez que je vous aide à
-   en mettre une en place proprement).
-5. Dans les réglages de build, indiquez :
-   - **Commande de build** : `python3 build.py`
-   - **Dossier de sortie (build output directory)** : `dist`
-6. Lancez le déploiement. Au bout de quelques minutes, le site est en ligne
-   sur une adresse du type `https://claude-bo.pages.dev` (Cloudflare choisit
-   le nom, vous pouvez le voir et le changer dans les réglages du projet).
+## 1 · Finir la mise en ligne
+
+Le dépôt est déjà connecté (projet `claude-bo`). Deux choses restent à
+faire dans le tableau de bord Cloudflare, sous **Workers & Pages → claude-bo** :
+
+1. **Corriger la commande de build** — onglet **Settings** → section build :
+   remplacez la commande de build par :
+   ```
+   SORTIE=dist python3 build.py
+   ```
+   (Sans cette variable, le site se génère à la racine du projet au lieu du
+   dossier `dist/` que `wrangler.jsonc` publie — ce qui expliquerait pourquoi
+   le premier déploiement n'a servi qu'un site vide.)
+2. **Activer une adresse publique** — sur la page d'aperçu du projet, la
+   bannière du haut indique « No URLs enabled ». Dans **Settings → Domains
+   & Routes**, activez le sous-domaine `workers.dev`. Le site devient alors
+   accessible sur `https://claude-bo.<votre-compte>.workers.dev`.
+3. Déclenchez un nouveau déploiement (bouton **New deployment**, ou un
+   simple `git push`) pour que ces changements prennent effet.
 
 À partir de là, **chaque mise à jour du dépôt republie automatiquement le
 site** — voir la section 5.
 
 ### Brancher lecoeurdubourg.fr, une fois acheté
 
-1. Dans le projet Cloudflare Pages, onglet **Domaines personnalisés** →
-   **Configurer un domaine personnalisé**.
+1. Dans le projet, onglet **Settings → Domains & Routes** → **Add** →
+   **Custom domain**.
 2. Entrez `lecoeurdubourg.fr`, puis suivez les instructions affichées : si
    le domaine est chez un registrar externe (OVH, Gandi…), Cloudflare vous
    donnera un enregistrement DNS à ajouter chez ce registrar. Le certificat
@@ -41,65 +51,59 @@ Le formulaire s'appuie sur trois éléments à mettre en place dans cet ordre.
 
 ### a) Formspree — reçoit et vous transmet les messages par e-mail
 
-1. Créez un compte gratuit sur [formspree.io](https://formspree.io).
-2. Créez un formulaire, entrez l'adresse e-mail qui doit recevoir les
-   messages.
-3. Formspree affiche une adresse du type `https://formspree.io/f/xxxxxxxx` —
-   copiez-la.
-4. Dans Cloudflare Pages : **Paramètres du projet** → **Variables
-   d'environnement** → **Ajouter une variable**, pour l'environnement de
-   **Production** :
-   - Nom : `FORMSPREE_ENDPOINT`
-   - Valeur : l'adresse copiée à l'étape précédente
-   - Cochez « Chiffrer » si l'option est proposée.
+Déjà fait : `https://formspree.io/f/xljdelrg`. Il reste à le rentrer dans
+Cloudflare (étape c ci-dessous).
 
 ### b) Cloudflare Turnstile — protège le formulaire contre les robots
 
-1. Dans le tableau de bord Cloudflare : **Turnstile** → **Ajouter un site**.
-2. Domaine : `lecoeurdubourg.fr` (ou l'adresse `*.pages.dev` en attendant).
-3. Cloudflare affiche deux clés :
-   - la **clé de site** (publique, sans danger à publier) ;
-   - la **clé secrète** (à ne jamais partager ni publier).
-4. La **clé de site** va dans `data.py`, dans `FORMULAIRE["turnstile_site_key"]["v"]`
-   — remplacez la valeur vide par cette clé, puis relancez `python3 build.py`,
-   committez et poussez. Tant que cette clé est vide, le formulaire
-   fonctionne sans Turnstile (moins protégé, mais jamais cassé).
-5. La **clé secrète** va dans Cloudflare Pages, en variable d'environnement
-   (comme pour Formspree ci-dessus) :
-   - Nom : `TURNSTILE_SECRET_KEY`
-   - Valeur : la clé secrète
-   - Cochez « Chiffrer ».
-   **Ne me donnez jamais cette clé secrète** — entrez-la vous-même
-   directement dans Cloudflare.
+Déjà fait : la clé publique (site key) est intégrée dans `data.py`. Il
+reste seulement la clé secrète à rentrer dans Cloudflare (étape c).
 
-### c) Rien d'autre à faire
+### c) Entrer les deux valeurs dans le Worker
 
-Le fichier `functions/api/contact.js` (déjà dans le dépôt) reçoit le
-formulaire, vérifie Turnstile, puis transmet à Formspree. Il se déploie
-automatiquement avec le reste du site, sans configuration supplémentaire.
+1. Dans le projet **claude-bo**, onglet **Bindings** (ou **Settings →
+   Variables and Secrets** selon la version de l'interface) → **Add
+   binding** → type **Environment Variable** ou **Secret**.
+2. Ajoutez :
+   - Nom `FORMSPREE_ENDPOINT`, valeur `https://formspree.io/f/xljdelrg` —
+     type Secret si l'option existe, sinon variable normale.
+   - Nom `TURNSTILE_SECRET_KEY`, valeur : la clé **secrète** Turnstile
+     (visible dans **Turnstile** sur le tableau de bord Cloudflare, à côté
+     de la clé publique déjà utilisée). **Ne me la donnez jamais** —
+     entrez-la vous-même directement ici, en type Secret.
+3. Redéployez (un nouveau déploiement applique les nouvelles variables).
+
+### d) Rien d'autre à faire
+
+`worker.js` (déjà dans le dépôt) reçoit le formulaire, vérifie Turnstile,
+puis transmet à Formspree. Il se déploie avec le reste du site, sans
+configuration supplémentaire une fois les deux valeurs ci-dessus entrées.
 
 ## 3 · Calendrier des disponibilités (préparation)
 
 Un flux GitHub Actions (`.github/workflows/rebuild-quotidien.yml`) est déjà
 en place pour republier le site chaque nuit, une fois que le calendrier
-iCal existera (ce n'est pas encore fait à ce jour). Pour l'activer dès
-maintenant :
+iCal existera (ce n'est pas encore fait à ce jour). Comme c'est un Worker
+(pas Pages), il n'y a pas de « Deploy Hook » à appeler : ce flux construit
+et publie lui-même via `wrangler`. Pour l'activer dès maintenant, ajoutez
+deux secrets sur GitHub (dépôt → **Settings** → **Secrets and variables**
+→ **Actions** → **New repository secret**) :
 
-1. Dans le projet Cloudflare Pages : **Paramètres** → **Deploy Hooks** →
-   créez-en un (donnez-lui un nom, ex. « rebuild quotidien »), et copiez
-   l'URL affichée.
-2. Sur GitHub, dans le dépôt : **Settings** → **Secrets and variables** →
-   **Actions** → **New repository secret** :
-   - Nom : `CF_DEPLOY_HOOK_URL`
-   - Valeur : l'URL copiée à l'étape précédente
+1. `CLOUDFLARE_API_TOKEN` — dans le tableau de bord Cloudflare : **My
+   Profile** (icône en haut à droite) → **API Tokens** → **Create Token**
+   → modèle **Edit Cloudflare Workers**. Copiez le jeton affiché (il ne
+   sera plus jamais visible ensuite).
+2. `CLOUDFLARE_ACCOUNT_ID` — visible dans le tableau de bord Cloudflare,
+   sur la page **Workers & Pages** (colonne de droite), ou dans l'URL du
+   tableau de bord.
 
 Sans effet visible tant que le calendrier iCal n'est pas branché, mais rien
 à refaire le jour où il le sera.
 
 ## 4 · Ce que ça coûte
 
-Tout ce qui précède est gratuit : Cloudflare Pages (bande passante
-illimitée), Formspree (jusqu'à 50 messages/mois), Cloudflare Turnstile,
+Tout ce qui précède est gratuit : Cloudflare Workers (généreux plan
+gratuit), Formspree (jusqu'à 50 messages/mois), Cloudflare Turnstile,
 GitHub Actions. Le seul coût est celui du nom de domaine, déjà prévu à
 part.
 

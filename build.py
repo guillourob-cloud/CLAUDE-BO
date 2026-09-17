@@ -441,16 +441,12 @@ DOC = f'''<!doctype html>
 </p></div></footer>
 </body></html>'''
 
-# Sur Cloudflare Pages (variable CF_PAGES fournie automatiquement par leur
-# environnement de build), le site publié doit vivre dans un dossier séparé
-# de la racine du dépôt — sinon data.py et build.py deviendraient
-# téléchargeables publiquement à côté du site.
-if os.environ.get("SORTIE"):
-    out = pathlib.Path(os.environ["SORTIE"])
-elif os.environ.get("CF_PAGES"):
-    out = ICI / "dist"
-else:
-    out = ICI
+# Sur Cloudflare (variable SORTIE=dist passée explicitement dans la commande
+# de build), le site publié doit vivre dans un dossier séparé de la racine
+# du dépôt — sinon data.py et build.py deviendraient téléchargeables
+# publiquement à côté du site. Voir wrangler.jsonc (assets.directory) et
+# MISE-EN-LIGNE.md.
+out = pathlib.Path(os.environ["SORTIE"]) if os.environ.get("SORTIE") else ICI
 out.mkdir(parents=True, exist_ok=True)
 
 nom = "apercu-mobile.html" if APERCU else "index.html"

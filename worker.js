@@ -1,20 +1,28 @@
-// Fonction serverless Cloudflare Pages — s'exécute sur les serveurs de
-// Cloudflare, jamais dans le navigateur du visiteur. Elle ne fait donc pas
-// exception à la règle « aucun JavaScript » du site, qui ne concerne que le
-// code envoyé au navigateur (voir CLAUDE.md).
+// Worker Cloudflare — sert le site statique (dist/, produit par build.py) et
+// gère le formulaire de contact. Ce code s'exécute côté serveur, jamais dans
+// le navigateur du visiteur : il ne compte pas dans la règle « aucun
+// JavaScript » du site, qui ne porte que sur ce qui est envoyé au visiteur
+// (voir CLAUDE.md).
 //
-// Rôle : reçoit le formulaire de contact, vérifie le jeton Turnstile côté
-// serveur, puis relaie vers Formspree qui gère l'envoi de l'e-mail.
-//
-// Variables d'environnement attendues (à définir dans le tableau de bord
-// Cloudflare Pages — jamais dans ce dépôt, voir MISE-EN-LIGNE.md) :
+// Variables d'environnement attendues (onglet Bindings du Worker, sur le
+// tableau de bord Cloudflare — jamais dans ce dépôt, voir MISE-EN-LIGNE.md) :
 //   FORMSPREE_ENDPOINT   ex. https://formspree.io/f/xxxxxxxx
 //   TURNSTILE_SECRET_KEY la clé secrète (pas la clé publique du site)
 
 const MERCI = "/#contact-merci";
 const ERREUR = "/#contact-erreur";
 
-export async function onRequestPost({ request, env }) {
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (request.method === "POST" && url.pathname === "/api/contact") {
+      return traiterContact(request, env);
+    }
+    return env.ASSETS.fetch(request);
+  },
+};
+
+async function traiterContact(request, env) {
   const revenirVers = (chemin) => Response.redirect(new URL(chemin, request.url), 303);
 
   const form = await request.formData();

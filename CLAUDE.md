@@ -8,7 +8,9 @@ octobre, au mois de novembre à avril.
 **L'architecture** — Le site est statique et généré. `data.py` contient
 toutes les données (marque, bâtiments, logements, partenaires, réglages).
 `build.py` les lit et écrit le HTML. `style.css` contient les styles.
-`photos/` contient les images en pleine qualité.
+`photos/` contient les images en pleine qualité. Hébergement : un Cloudflare
+Worker nommé `claude-bo` (pas Cloudflare Pages) — voir `wrangler.jsonc` et
+`worker.js`, qui sert les fichiers générés et gère le formulaire de contact.
 
 **Deux commandes** — `python3 build.py` produit `index.html` (le vrai site,
 photos en fichiers séparés). `python3 build.py --apercu` produit
@@ -27,7 +29,7 @@ consultation sur téléphone — jamais mis en ligne).
      sur Contact — mais il ne se charge que si `FORMULAIRE["turnstile_site_key"]`
      est renseigné dans `data.py`, et reste `async defer` (non bloquant).
      Tant que cette clé est vide, le site reste 100 % sans JS.
-   - Le code de `functions/api/contact.js` (Cloudflare Pages Functions)
+   - Le code de `worker.js` (le Cloudflare Worker qui héberge le site)
      s'exécute côté serveur, jamais dans le navigateur : il ne compte pas
      dans cette règle, qui ne porte que sur ce qui est envoyé au visiteur.
 2. Aucune information ne doit être écrite en dur dans le HTML. Tout vient de
@@ -39,8 +41,14 @@ consultation sur téléphone — jamais mis en ligne).
    recompresse pas. Seules celles de `photos-apercu/` peuvent être allégées.
 6. Aucun secret (clé Turnstile secrète, endpoint Formspree) ne doit jamais
    être écrit dans `data.py` ni ailleurs dans ce dépôt : ils vivent
-   uniquement en variables d'environnement Cloudflare Pages. Seule la clé
-   Turnstile *publique* (site key) est faite pour être dans `data.py`.
+   uniquement dans les Bindings du Worker, sur le tableau de bord
+   Cloudflare. Seule la clé Turnstile *publique* (site key) est faite pour
+   être dans `data.py`.
+7. Le dossier de sortie du site (`dist/`, publié par le Worker via
+   `wrangler.jsonc`) est produit en passant `SORTIE=dist` à `build.py` —
+   c'est ce qu'utilisent la commande de build Cloudflare et le workflow
+   GitHub Actions. Sans cette variable, `build.py` écrit à la racine du
+   projet (usage local normal).
 
 **La direction artistique** — Palette : galet de rivière, ombre de montagne,
 vert de vallée. Trois polices : Instrument Serif (titres), Inter (texte),
