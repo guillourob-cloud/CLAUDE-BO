@@ -105,6 +105,62 @@ BATIMENTS = {
     }
 }
 
+# Page « Autour de vous » — cols, stations, remontées, lacs. Distances et
+# dénivelés donnés tels quels (recherche personnelle, pas mesurés) : on
+# préserve la formulation d'origine plutôt que de forcer des colonnes
+# homogènes sur des données qui ne le sont pas toutes (certains cols n'ont
+# qu'une distance vélo, l'altitude de Vaujany renvoie à celle du col, etc.).
+ENVIRONS = {
+    "titre": "Autour de vous",
+    "intro": ("Le Bourg-d'Oisans est un carrefour de cols mythiques et de stations "
+              "accessibles à la journée. Distances et dénivelés donnés à titre "
+              "indicatif, pour préparer une sortie — pas des mesures officielles."),
+    "categories": [
+        {"id": "cols", "titre": "Cols & ascensions", "items": [
+            {"nom": "Alpe d'Huez", "detail": "14,9 km en voiture · 13,8 km à vélo · +1 266 m D+", "val": "1 850 m"},
+            {"nom": "Col de Sarenne", "detail": "22 km en voiture · ≈29,5 km à vélo · ≈+1 425 m D+", "val": "1 999 m"},
+            {"nom": "Col de la Croix de Fer", "detail": "31 km à vélo · +1 576 m D+", "val": "2 063 m"},
+            {"nom": "Col du Glandon", "detail": "Inclus avec la Croix de Fer · 440 m A/R en plus depuis cet itinéraire · +22 m D+", "val": "1 924 m"},
+            {"nom": "Col du Lautaret", "detail": "38,8 km en voiture · 37,9 km à vélo · +1 338 m D+", "val": "2 057 m"},
+            {"nom": "Col du Galibier", "detail": "≈48 km à vélo (96 km A/R) · +1 900 m D+", "val": "2 646 m"},
+            {"nom": "Col du Sabot", "detail": "≈28,5 km à vélo (57 km A/R) · +1 565 m D+", "val": "2 100 m"},
+            {"nom": "Col d'Ornon", "detail": "12,7 km en voiture jusqu'au col · 28 km A/R à vélo · +764 m D+", "val": "1 380 m"},
+            {"nom": "Col du Solude", "detail": "31 km à vélo, boucle avec Villard-Notre-Dame et Villard-Reymond · +1 159 m D+", "val": "1 686 m"},
+        ]},
+        {"id": "stations", "titre": "Stations", "items": [
+            {"nom": "Alpe d'Huez", "detail": "14,9 km en voiture · 13,8 km à vélo · +1 266 m D+", "val": "1 850 m"},
+            {"nom": "Les 2 Alpes", "detail": "19,5 km en voiture · 42 km A/R à vélo · +1 268 m D+", "val": "1 663 m"},
+            {"nom": "Oz-en-Oisans / Oz 3300", "detail": "13,8 km en voiture · 42 km A/R à vélo · +732 m D+", "val": "1 344 m"},
+            {"nom": "Vaujany", "detail": "18,6 km en voiture · 57 km A/R à vélo jusqu'au Col du Sabot · +1 565 m D+", "val": "2 100 m au col"},
+            {"nom": "Auris-en-Oisans", "detail": "40 km à vélo en boucle · +1 168 m D+", "val": "1 584 m"},
+            {"nom": "Villard-Reculas", "detail": "15,3 km en voiture", "val": "≈1 450 m"},
+            {"nom": "Venosc", "detail": "13,4 km en voiture jusqu'à l'office de tourisme · 8 km à vélo (itinéraire officiel) · +250 m D+ pour l'accès au téléphérique", "val": ""},
+            {"nom": "Mont-de-Lans", "detail": "À proximité des 2 Alpes", "val": "≈1 280 m"},
+            {"nom": "Besse-en-Oisans", "detail": "≈16 km en voiture", "val": "≈1 550 m"},
+            {"nom": "Mizoën", "detail": "15,8 km en voiture", "val": "≈1 180 m"},
+            {"nom": "Saint-Christophe-en-Oisans", "detail": "≈29,4 km en voiture, sur la route de La Bérarde", "val": ""},
+            {"nom": "La Bérarde", "detail": "≈32 km en voiture · 66 km A/R à vélo · +1 250 m D+", "val": "1 715 m"},
+            {"nom": "La Grave", "detail": "≈28 km en voiture · 72 km A/R à vélo (hameaux de La Grave) · +1 981 m D+", "val": "1 823 m max"},
+        ]},
+        {"id": "remontees", "titre": "Remontées mécaniques", "items": [
+            {"nom": "Eau d'Olle Express", "detail": "Allemond, accès depuis le Bourg-d'Oisans", "val": "8 min → Oz 3300"},
+            {"nom": "Télécabine de Venosc", "detail": "13,4 km en voiture (8 km à vélo, itinéraire officiel)", "val": "8 min → Les 2 Alpes"},
+            {"nom": "Télécabine de Poutran", "detail": "Oz 3300 · liaison vers le domaine de l'Alpe d'Huez", "val": ""},
+            {"nom": "Remontées de l'Alpe d'Huez", "detail": "Accessibles depuis la station", "val": "14,9 km"},
+            {"nom": "Remontées des 2 Alpes", "detail": "Accessibles depuis la station", "val": "19,5 km"},
+        ]},
+        {"id": "lacs", "titre": "Lacs & sites", "items": [
+            {"nom": "Lac du Verney", "detail": "Sur l'itinéraire Allemond / Oz / Vaujany", "val": ""},
+            {"nom": "Lac de Grand'Maison", "detail": "Sur l'itinéraire Croix de Fer / Glandon / Sabot", "val": ""},
+            {"nom": "Lac du Chambon", "detail": "Sur l'itinéraire Les 2 Alpes / Lautaret / Galibier / Sarenne", "val": ""},
+            {"nom": "Lac Bleu du Bourg-d'Oisans", "detail": "À proximité immédiate du logement", "val": ""},
+            {"nom": "Lac de Buclet", "detail": "À proximité immédiate du Bourg-d'Oisans", "val": ""},
+            {"nom": "Lac Besson", "detail": "Accessible depuis l'Alpe d'Huez ou Oz", "val": ""},
+            {"nom": "Lacs des Bergers", "detail": "Secteur Alpe d'Huez", "val": ""},
+        ]},
+    ],
+}
+
 PARTENAIRES = {
     "velo":        {"kind": "Vélo", "nom": "", "d": "Location, réparation et entretien à deux pas.", "provisoire": True},
     "boulangerie": {"kind": "Boulangerie", "nom": "", "d": "Pain et viennoiseries au coin de la rue.", "provisoire": True},

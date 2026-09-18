@@ -3,7 +3,7 @@
    Aucun JavaScript n'est nécessaire pour l'afficher.
    Les photos sont intégrées au fichier : il fonctionne hors ligne."""
 import html, base64, datetime, pathlib, shutil, os, re, calendar, urllib.request
-from data import MARQUE, APROPOS, BATIMENTS, PARTENAIRES, LOGEMENTS, REGLAGES, FORMULAIRE
+from data import MARQUE, APROPOS, BATIMENTS, PARTENAIRES, LOGEMENTS, REGLAGES, FORMULAIRE, ENVIRONS
 
 import sys
 APERCU = "--apercu" in sys.argv     # fichier unique, photos allégées, pour consultation
@@ -206,6 +206,24 @@ def calendrier_html(occupe, n_mois=4):
     return f'<div class="dispo-mois">{blocs}</div>'
 
 
+def _items_html(items):
+    return "".join(
+        f'<li><span class="rep-l">{E(it["nom"])}<em>{E(it["detail"])}</em></span>'
+        + (f'<b>{E(it["val"])}</b>' if it.get("val") else "") + '</li>'
+        for it in items)
+
+
+def page_environs():
+    blocs = []
+    for i, cat in enumerate(ENVIRONS["categories"]):
+        tete = (f'<p class="eyebrow">Le Bourg-d\'Oisans</p><h1>{E(ENVIRONS["titre"])}</h1>'
+                f'<p class="lede">{E(ENVIRONS["intro"])}</p><h2>{E(cat["titre"])}</h2>'
+                if i == 0 else f'<h2>{E(cat["titre"])}</h2>')
+        blocs.append(f'<section class="sec{" sec--paper" if i % 2 else ""}"><div class="wrap">'
+                     f'{tete}<ul class="reperes">{_items_html(cat["items"])}</ul></div></section>')
+    return f'<section class="page" id="environs">{"".join(blocs)}</section>'
+
+
 def page_accueil():
     bat = BATIMENTS["viennois"]
     reperes = "".join(
@@ -244,6 +262,7 @@ def page_accueil():
 partent l'Alpe d'Huez et les grands cols, et c'est ici qu'on trouve les commerces,
 le marché et les restaurants — au pied de l'immeuble.</p>
 <ul class="reperes">{reperes}</ul>
+<a class="btn btn--ghost" href="#environs">Voir tous les cols, stations et lacs</a>
 </div>
 <div class="deux-media">{img(bat["medias"][1])}{carte_osm(bat)}</div>
 </div></div></section>
@@ -509,7 +528,7 @@ langues = "".join(
      else f'<span class="off" title="bientôt">{c.upper()}</span>')
     for c, _ in REGLAGES["langues"])
 
-pages = "".join([page_appartements(), page_apropos(), page_contact()]
+pages = "".join([page_appartements(), page_apropos(), page_environs(), page_contact()]
                 + [page_logement(l) for l in visibles]
                 + [page_accueil()])          # accueil en dernier = vue par défaut
 
@@ -533,6 +552,7 @@ DOC = f'''<!doctype html>
 <a class="marque" href="#accueil"><span>{E(MARQUE["nom"])}</span><i>720 m</i></a>
 <nav class="nav">
 <a href="#appartements">Appartements</a>
+<a href="#environs">Autour de vous</a>
 <a href="#a-propos">À propos</a>
 <a href="#contact">Contact</a></nav>
 <p class="lang">{langues}</p>
