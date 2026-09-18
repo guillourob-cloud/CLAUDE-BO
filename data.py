@@ -196,9 +196,12 @@ LOGEMENTS = [
                   "libelle": "Demander la saison d'hiver"},
     },
 
-    # Calendrier : coller ici les liens iCal exportés depuis Airbnb / Booking.
-    # build.py les lit et génère un calendrier statique des dates occupées.
-    "ical": [],
+    # Calendrier : liens iCal exportés depuis Airbnb / Booking. build.py les
+    # lit et génère un calendrier statique des dates occupées.
+    "ical": [
+        "https://www.airbnb.fr/calendar/ical/1732423185427703033.ics?t=6b72b1c2fd9a4ee6878bcfb89116c2e1",
+        "https://ical.booking.com/v1/export?t=46b75029-e158-40db-8535-ca0b86afa551",
+    ],
 
     "visite360": {"url": "", "plateforme": "",
                   "titre": "Visiter l'appartement en 360°",
